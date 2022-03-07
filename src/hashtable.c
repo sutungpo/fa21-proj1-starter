@@ -48,6 +48,29 @@ void insertData(HashTable *table, void *key, void *data) {
   // 1. Find the right hash bucket location with table->hashFunction.
   // 2. Allocate a new hash bucket entry struct.
   // 3. Append to the linked list or create it if it does not yet exist. 
+  struct HashBucketEntry *bucketentry, *bucketcur;
+  unsigned int index;
+
+  if (table == NULL)
+    return;
+  if (table->size == 0)
+    return;
+
+  bucketentry = malloc(sizeof(struct HashBucketEntry));
+  bucketentry->key = key;
+  bucketentry->data = data;
+  bucketentry->next = NULL;
+  index = table->hashFunction(key) % table->size;
+  bucketcur = table->buckets[index];
+
+  if (bucketcur == NULL) {
+    table->buckets[index] = bucketentry;
+    return;
+  }
+  while(bucketcur->next != NULL) {
+      bucketcur = bucketcur->next;
+    }
+  bucketcur->next = bucketentry;
 }
 
 /* Task 1.3 */
@@ -56,20 +79,62 @@ void *findData(HashTable *table, void *key) {
   // HINT:
   // 1. Find the right hash bucket with table->hashFunction.
   // 2. Walk the linked list and check for equality with table->equalFunction.
+  struct HashBucketEntry *bucketentry;
+  unsigned int index;
+
+  if (table == NULL)
+    return NULL;
+  if (table->size == 0)
+    return NULL;
+  index = table->hashFunction(key) % table->size;
+  bucketentry = table->buckets[index];
+
+  while (bucketentry != NULL)
+  {
+    if (table->equalFunction(bucketentry->key, key) == 1) {
+      return bucketentry->data;
+    }
+    bucketentry = bucketentry->next;
+  }
+  
+  return NULL;
 }
 
 /* Task 2.1 */
 unsigned int stringHash(void *s) {
   // -- TODO --
-  fprintf(stderr, "need to implement stringHash\n");
+  //fprintf(stderr, "need to implement stringHash\n");
   /* To suppress compiler warning until you implement this function, */
-  return 0;
+  unsigned int hash = 0;
+  unsigned int seed = 31;
+  if (s == NULL)
+    return 0;
+  char *ch = (char *)s;
+  while (*ch != '\0')
+  {
+    hash = hash * seed + (unsigned int)(*ch);
+    ch++;
+  }
+  
+  return hash;
 }
 
 /* Task 2.2 */
 int stringEquals(void *s1, void *s2) {
   // -- TODO --
-  fprintf(stderr, "You need to implement stringEquals");
+  //fprintf(stderr, "You need to implement stringEquals");
   /* To suppress compiler warning until you implement this function */
-  return 0;
+  char *c1 = (char *)s1;
+  char *c2 = (char *)s2;
+  int ret = 0;
+  if (c1 == NULL || c2 == NULL) 
+    return 0;
+  while ( !(ret = *c1 - *c2) && *c1) {
+      c1++;
+      c2++;
+  }
+  if (ret == 0)
+    return 1;
+  else
+    return 0;
 }
