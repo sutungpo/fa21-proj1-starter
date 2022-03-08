@@ -33,6 +33,7 @@
  */
 HashTable *dictionary;
 
+char zero = 0;
 /*
  * The MAIN routine.  You can safely print debugging information
  * to standard error (stderr) as shown and it will be ignored in 
@@ -66,10 +67,10 @@ int main(int argc, char **argv) {
 #endif /* _PHILPHIX_UNITTEST */
 
 #define BUF 1024
-char *getnewline(FILE *stream) {
+char *getnewline1(FILE *stream) {
   char *buffer = NULL;
   size_t size = 0;
-  char newline_found = 0, found = 0;
+  char newline_found = 0;
   for (;;)
   {
     char *temp = realloc(buffer, size + BUF);
@@ -96,6 +97,56 @@ char *getnewline(FILE *stream) {
   }
 
   return buffer;
+}
+
+char *getnewline(FILE *stream) {
+  char *buffer = NULL, *temp = NULL, ch, found = 0;
+  size_t size = 0, ix = 0;
+
+  buffer = calloc(size + BUF, sizeof(char));
+  if (!buffer) {
+    free(buffer);
+    return NULL;
+  }
+  size += BUF;
+  zero = 0;
+  while(1) {
+    ch = fgetc(stream);
+    if (ch != EOF) {
+      if (found == 0)
+        found = 1;
+      buffer[ix++] = ch;
+    }
+    else {
+      if(ferror(stream)){
+        puts("read file failed");
+        return NULL;
+      }
+      if (found == 1)
+        return buffer;
+      else 
+        return NULL;
+    }
+    if (ch == '\0') {
+      zero = 1;
+      return buffer;
+    }
+    if (ix == size) {
+      temp = realloc(buffer, size + BUF);
+      if (!temp) {
+        free(buffer);
+        return NULL;
+      }
+      buffer = temp;
+      size += BUF;
+    }
+    if (ch == '\n') {
+      buffer[ix] = '\0';
+      return buffer;
+    }
+  }
+
+  //return NULL;
 }
 
 /* Task 3 */
@@ -226,26 +277,25 @@ void processInput() {
         if (!preblank) {
           endstr = ix;
           preblank = 1;
-          w = varcheck(&buf[startstr], endstr - startstr);
-          if (w != &buf[startstr]) {
-            if (ixb + strlen(w) > 3 * lenback / 4) {
-              lenback = 2 * lenback;
-              bufback = realloc(bufback, lenback);
+          if (startstr != -1) {
+            w = varcheck(&buf[startstr], endstr - startstr);
+            if (w != &buf[startstr]) {
+              if (ixb + strlen(w) > 3 * lenback / 4) {
+                lenback = 2 * lenback;
+                bufback = realloc(bufback, lenback);
+              }
+              memmove(&bufback[ixb], w, strlen(w));
+              ixb += strlen(w);
             }
-            memmove(&bufback[ixb], w, strlen(w));
-            ixb += strlen(w);
-          }
-          else {
-            if (ixb + endstr - startstr > 3 * lenback / 4) {
-              lenback = 2 * lenback;
-              bufback = realloc(bufback, lenback);
+            else {
+              if (ixb + endstr - startstr > 3 * lenback / 4) {
+                lenback = 2 * lenback;
+                bufback = realloc(bufback, lenback);
+              }
+              memmove(&bufback[ixb], w, endstr - startstr);
+              ixb += endstr - startstr;
             }
-            memmove(&bufback[ixb], w, endstr - startstr);
-            ixb += endstr - startstr;
           }
-
-          //if (ix == len)
-          //  bufback[ixb] = '\0';
         }
         if (ix == len) {
           if (ixb + ix - endstr + 1 > 3 * lenback / 4) {
@@ -258,7 +308,10 @@ void processInput() {
       }
       ix++;
     }
-    fputs(bufback, stdout);
+    printf("%s",bufback);
+    if (zero)
+      putchar(0);
+    //fputs(bufback, stdout);
     startstr = -1, endstr = 0, preblank = 0, ix = 0, ixb = 0;
     free(buf);
     free(bufback);
