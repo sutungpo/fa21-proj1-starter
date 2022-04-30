@@ -33,10 +33,9 @@
  */
 HashTable *dictionary;
 
-char zero = 0;
 /*
  * The MAIN routine.  You can safely print debugging information
- * to standard error (stderr) as shown and it will be ignored in 
+ * to standard error (stderr) as shown and it will be ignored in
  * the grading process.
  */
 #ifndef _PHILPHIX_UNITTEST
@@ -66,254 +65,80 @@ int main(int argc, char **argv) {
 }
 #endif /* _PHILPHIX_UNITTEST */
 
-#define BUF 1024
-char *getnewline1(FILE *stream) {
-  char *buffer = NULL;
-  size_t size = 0;
-  char newline_found = 0;
-  for (;;)
-  {
-    char *temp = realloc(buffer, size + BUF);
-    if (!temp)
-    {
-            free(buffer);
-            return NULL;
-    }
-    buffer = temp;
-
-    if (!fgets(buffer + size, BUF, stream))
-    {
-            free(buffer);
-            return NULL;
-    }
-
-    if(strchr(buffer + size, '\n') || feof(stream))
-      newline_found = 1;
-    if (!newline_found)
-            size += BUF - 1;
-    else
-            break;
-
-  }
-
-  return buffer;
-}
-
-char *getnewline(FILE *stream) {
-  char *buffer = NULL, *temp = NULL, ch, found = 0;
-  size_t size = 0, ix = 0;
-
-  buffer = calloc(size + BUF, sizeof(char));
-  if (!buffer) {
-    free(buffer);
-    return NULL;
-  }
-  size += BUF;
-  zero = 0;
-  while(1) {
-    ch = fgetc(stream);
-    if (ch != EOF) {
-      if (found == 0)
-        found = 1;
-      buffer[ix++] = ch;
-    }
-    else {
-      if(ferror(stream)){
-        puts("read file failed");
-        return NULL;
-      }
-      if (found == 1)
-        return buffer;
-      else 
-        return NULL;
-    }
-    if (ch == '\0') {
-      zero = 1;
-      return buffer;
-    }
-    if (ix == size) {
-      temp = realloc(buffer, size + BUF);
-      if (!temp) {
-        free(buffer);
-        return NULL;
-      }
-      buffer = temp;
-      size += BUF;
-    }
-    if (ch == '\n') {
-      buffer[ix] = '\0';
-      return buffer;
-    }
-  }
-
-  //return NULL;
-}
-
 /* Task 3 */
 void readDictionary(char *dictName) {
   // -- TODO --
-  //fprintf(stderr, "You need to implement readDictionary\n");
-  FILE *fp;
-  char *m, *n;
-  char *buf, string;
-  int len = 0, found = 0;
-  int startstr = -1, ix = 0, preblank = 0, endstr = 0;
-
-  if ( (fp = fopen(dictName, "r")) == NULL) {
-    puts("failed to open file!");
-    exit(61);
-  }
-
-  while ((buf = getnewline(fp)) != NULL) {
-    len = strlen(buf);
-    while(1) {
-      string = buf[ix];
-      if (string != ' ' && string != '\t' && string != '\n' && string != '\0') {
-        if (startstr == -1)
-          startstr = ix;
-        if (preblank) {
-          startstr = ix;
-          preblank = 0;
-        }
-      }
-      else if (ix <= len) {
-          if (!preblank) {
-            endstr = ix;
-            preblank = 1;
-            if (found == 0) {
-              m = calloc(endstr - startstr + 1, sizeof(char));
-              memmove(m, &buf[startstr], endstr - startstr);
-              found = 1;
-            }
-            else if (found == 1) {
-              n = calloc(endstr - startstr + 1, sizeof(char));
-              memmove(n, &buf[startstr], endstr - startstr);
-              insertData(dictionary, m ,n);
-              found = 0;
-              break;
-            }
-          }
-          if (ix == len) {
-            break;
-          }
-      }
-      ix++;
+  const int length = 1000000;
+  FILE *fp = fopen(dictName, "r");
+  while(1){
+    char* key = (char*) malloc(sizeof(char) * length);
+    char* value = (char*) malloc(sizeof(char) * length);
+    if(fscanf(fp, "%s%s", key, value) == EOF){
+      break;
     }
-    free(buf);
-    len = 0, startstr = -1, ix = 0, preblank = 0, endstr = 0;
-  }
-
-  fclose(fp);
-}
-
-char *varcheck(char *word1, int len) {
-  char *w1, *w2, *w3, *data;
-  int delta, ix = 0;
-
-  w1 = calloc(len + 1, sizeof(char));
-  w2 = calloc(len + 1, sizeof(char));
-  w3 = calloc(len + 1, sizeof(char));
-  memmove(w1, word1, len);
-
-  while(ix < len) {
-    delta = 0;
-    if (w1[ix] >= 'A' && w1[ix] <= 'Z') {
-      delta = 0x20;
+    if(strlen(key) && strlen(value)) {
+      // printf("%s %s\n", key, value);
+      insertData(dictionary, key, value);
     }
-    w3[ix] = w1[ix] + delta;
-    ix++;
   }
-  memmove(w2, w3, len);
-  if (w1[0] >= 'A' && w1[0] <= 'Z') {
-    w2[0] = w1[0];
-  }
-
-  data = findData(dictionary, w1);
-  if (data == NULL) {
-    data = findData(dictionary, w2);
-  } 
-  if (data == NULL) {
-    data = findData(dictionary, w3);
-  } 
-  if (data == NULL) {
-    data = word1;
-  } 
-  
-  free(w1);
-  free(w2);
-  free(w3);
-
-  return data;
+  close(fp);
 }
 
 /* Task 4 */
 void processInput() {
   // -- TODO --
   // fprintf(stderr, "You need to implement processInput\n");
-  char *buf, *bufback, *w, string;
-  int len = 0,  startstr = -1, endstr = 0, preblank = 0, ix = 0, ixb = 0, lenback;
+  const int length = 1000000;
+  char* word = (char*) malloc(sizeof(char) * length);
+  char ch;
+  int pos = 0;
+  while((ch = getchar()) != EOF || strlen(word) != 0){
 
-  while ((buf = getnewline(stdin)) != NULL) {
-    len = strlen(buf);
-    lenback = len + 1;
-    bufback = malloc(lenback);
-    while(1) {
-      string = buf[ix];
-      if ((string >= '0' && string <= '9') || (string >= 'A' && string <= 'Z') || (string >= 'a' && string <= 'z')) {
-        if (startstr == -1)
-          startstr = ix;
-        if (preblank) {
-          startstr = ix;
-          preblank = 0;
-          if (ixb + startstr - endstr > 3 * lenback / 4) {
-            lenback = 2 * lenback;
-            bufback = realloc(bufback, lenback);
-          }
-          memmove(&bufback[ixb], &buf[endstr], startstr - endstr);
-          ixb += startstr - endstr;
-        }
+      if(isalpha(ch) || isdigit(ch)){
+        *(word + pos++) = ch;
+        continue;
       }
-      else if (ix <= len) {
-        if (!preblank) {
-          endstr = ix;
-          preblank = 1;
-          if (startstr != -1) {
-            w = varcheck(&buf[startstr], endstr - startstr);
-            if (w != &buf[startstr]) {
-              if (ixb + strlen(w) > 3 * lenback / 4) {
-                lenback = 2 * lenback;
-                bufback = realloc(bufback, lenback);
-              }
-              memmove(&bufback[ixb], w, strlen(w));
-              ixb += strlen(w);
-            }
-            else {
-              if (ixb + endstr - startstr > 3 * lenback / 4) {
-                lenback = 2 * lenback;
-                bufback = realloc(bufback, lenback);
-              }
-              memmove(&bufback[ixb], w, endstr - startstr);
-              ixb += endstr - startstr;
-            }
-          }
-        }
-        if (ix == len) {
-          if (ixb + ix - endstr + 1 > 3 * lenback / 4) {
-            lenback = 2 * lenback;
-            bufback = realloc(bufback, lenback);
-          }
-          memmove(&bufback[ixb], &buf[endstr], ix - endstr + 1);
-          break;
-        }
+      *(word + pos) = '\0';
+      pos = 0;
+      char* str = (char*) malloc(sizeof(char) * length);
+      strcpy(str, word);
+
+      //The exact word
+      char* res;
+      res = (char*)findData(dictionary, word);
+      if(res != NULL) {
+        output(res, ch, word, str);
+        continue;
       }
-      ix++;
-    }
-    printf("%s",bufback);
-    if (zero)
-      putchar(0);
-    //fputs(bufback, stdout);
-    startstr = -1, endstr = 0, preblank = 0, ix = 0, ixb = 0;
-    free(buf);
-    free(bufback);
+
+      //The word with every alphabetical character except the first character converted to lowercase
+      int i = 1;
+      for( ;i < strlen(word); i++){
+        *(word + i) = tolower(*(word + i));
+      }
+      res = (char*)findData(dictionary, word);
+      if(res != NULL) {
+        output(res, ch, word, str);
+        continue;
+      }
+
+      //Every alphabetical character of the word converted to lowercase
+      *(word) = tolower(*(word));
+      res = (char*)findData(dictionary, word);
+      if(res != NULL) {
+        output(res, ch, word, str);
+        continue;
+      }
+
+      //cant match
+      output(str, ch, word, str);
   }
+  free(word);
+}
+
+void output(char* res, char ch, char* word, char* str){
+    printf("%s", res);
+    if(ch != EOF) printf("%c", ch);
+    memset(word, 0 ,sizeof(word));
+    free(str);
 }
